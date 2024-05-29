@@ -8,19 +8,17 @@ type Db = Arc<Mutex<HashMap<String, Bytes>>>;
 
 #[tokio::main]
 async fn main() {
-    let listener = TcpListener::bind("127.0.0.1:6379").await.unwrap();
-
-    println!("Listening");
-
     let db = Arc::new(Mutex::new(HashMap::new()));
 
-    // second item contains the IP and port of the new connection
+    let listener = TcpListener::bind("127.0.0.1:6379").await.unwrap();
+    println!("Listening");
+
     loop {
 	let (socket, _) = listener.accept().await.unwrap();
+	println!("Accepted");
 
 	let db = db.clone();
 
-	println!("Accepted");
 	tokio::spawn(async move {
 	    process(socket, db).await;
 	});
@@ -30,7 +28,6 @@ async fn main() {
 async fn process(socket: TcpStream, db: Db) {
     use mini_redis::Command::{self, Get, Set};
 
-    // read/write redis frames instead of byte streams
     let mut connection = Connection::new(socket);
 
     while let Some(frame) = connection.read_frame().await.unwrap() {
